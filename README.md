@@ -26,18 +26,12 @@ Run the automatic env setup file `source setup.sh` or
 
 ## Experiments
 
-We provided a comprehensive notebook `demo.ipynb` to show the idea of
+We provide a set of demonstrations of `OGW`:
 
-* tractable bounds of FGW
-* convex extension of FGW
-* certification and attack for task of graph classification
-
-Other files includes:
-
-* `demo_train.py`: build the model for certificate and attack.
-* `demo_spla.py`: preprocess to generate the linear mapping matrix $\mathcal{A}$.
-* `demo_certify.py`: complete setup for experiments of robust certifications.
-* `demo_attack.py`: complete setup for experiments of attack.
+* `tightness_syn.ipynb`: A demo of tightness on synthetic data.
+* `tightness_mutag.ipynb`: A demo of tightness on MUTAG dataset.
+* `barycenter_syn.ipynb`: A demo of barycenter on synthetic data.
+* `barycenter_mnist_2d.ipynb`: A demo of barycenter on point cloud MNIST-2D data.
 
 ## License
 
