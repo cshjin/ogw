@@ -21,13 +21,8 @@ Run the automatic env setup file `source setup.sh` or
 
 ## dataset
 
-| dataset | # graphs | # lables | # features | ave. edge | min edge | max edge | avg. node | min node | max node |
-| ------- | -------- | -------- | ---------- | --------- | -------- | -------- | --------- | -------- | -------- |
-| MUTAG   | 188      | 2        | 7          | 38        | 20       | 66       | 17.5      | 10       | 28       |
-| PTC_MR  | 344      | 2        | 18         | 25.0      | 2        | 142      | 13.0      | 2        | 64       |
-| COX2    | 467      | 2        | 38         | 86.0      | 68       | 118      | 41.0      | 32       | 56       |
-| BZR     | 405      | 2        | 56         | 74.0      | 26       | 120      | 35.0      | 13       | 57       |
-
+* download [MNIST 2D](https://www.kaggle.com/cristiangarcia/pointcloudmnist2d) from Kaggle.
+* TUDataset benchmark will be loaded from `pyg`.
 
 ## Experiments
 
