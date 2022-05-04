@@ -1,10 +1,13 @@
-""" Implementation of gwtil and its associated utilities. """
+""" Implementation of ogw and its associated utilities. """
 import numpy as np
 from scipy.linalg import svd
 
 from ogw.gromov_prox import linear_solver, projection_matrix, quad_solver
 from ogw.spg import SPG, default_options
 from ogw.utils import padding, squarify_v2
+from scipy.linalg import eigvalsh
+
+norm = np.linalg.norm
 
 
 def Qcal_lb(C, D, return_matrix=False, **kwargs):
@@ -243,7 +246,8 @@ def gwtil_ub(C, D, return_matrix=False, **kwargs):
     """ Upper bound of gwtil by soling `Qcal_lb`.
 
     .. math: :
-        gwtil = ||C||_F^2 / m^2 + ||D||_F^2 / n^2 - 2 / mn * \\max_{P} \\Qcal(P)
+        gwtil_{ub} = ||C||_F^2 / m^2 + ||D||_F^2 / n^2
+                - 2 / mn * \\max_{P \\in \\Ocal \\cap \\Ecal} tr(C P D P^\top)
 
     Args:
         C(np.ndarray): Geodesic distance in source domain with dim(m, m).
@@ -262,8 +266,8 @@ def gwtil_ub(C, D, return_matrix=False, **kwargs):
     mn_sqrt = np.sqrt(mn)
     emn = np.ones((m, n))
 
-    C_norm = np.linalg.norm(C)
-    D_norm = np.linalg.norm(D)
+    C_norm = norm(C)
+    D_norm = norm(D)
     U = projection_matrix(m)
     V = projection_matrix(n)
 
@@ -279,6 +283,113 @@ def gwtil_ub(C, D, return_matrix=False, **kwargs):
         return fval, P
     else:
         return fval
+
+
+def gwtil_o(C, D, return_matrix=False, **kwargs):
+    """ Optimize over the orthogonal domain direct.
+
+    .. math: :
+        ogw_{o} = ||C||_F^2 / m^2 + ||D||_F^2 / n^2
+                - 2 / mn * \\max_{P \\in \\Ocal} tr(C P D P^\top)
+
+    Args:
+        C (np.ndarray): Geodesic distance in source domain with dim(m, m).
+        D (np.ndarray): Geodesic distance in source domain with dim(n, n).
+        return_matrix (bool, optional): Return the optimal P matrix if `True`. Defaults to False.
+
+    Returns:
+        float: ogw distance
+        np.ndarray, optional: P matrix
+
+    See Also:
+    ogw.gwtil_ub
+    """
+    m = C.shape[0]
+    n = D.shape[0]
+    mn = m * n
+    C_norm = norm(C)
+    D_norm = norm(D)
+
+    C_, D_ = padding(C, D)
+    fval_Qcal, P = quad_solver(C_, D_, return_matrix=True)
+    gwtil_val = C_norm**2 / m**2 + D_norm**2 / n**2 - 2 / mn * fval_Qcal
+    if return_matrix:
+        return gwtil_val, P[:m, :n]
+    else:
+        return gwtil_val
+
+
+def ogw_lb(C, D, V=None):
+    """ Faster implementation of computing OGW_lb for graph with same orders.
+
+    Args:
+        C(np.ndarray): Geodesic distance in source domain with dim(n, n).
+        D(np.ndarray): Geodesic distance in target domain with dim(n, n).
+        V(np.ndarray, optional): Projection matrix (n-1, n-1).  Not used.
+    Returns:
+        float: OGW_lb distance.
+    """
+
+    n = C.shape[0]
+    C_hat = VXV(C)
+    D_hat = VXV(D)
+    Cone = np.sum(C, axis=1)
+    Done = np.sum(D, axis=1)
+
+    evals_C = eigvalsh(C_hat)
+    evals_D = eigvalsh(D_hat)
+
+    fval_q1 = np.dot(evals_C, evals_D)
+
+    VCone = Vx(Cone)
+    VDone = Vx(Done)
+    fval_q2 = norm(VCone) * norm(VDone) * 2 / n
+    sC = Cone.sum()
+    sD = Done.sum()
+    fval_c = sC * sD / n**2
+
+    fval_qcal = fval_c + fval_q1 + fval_q2
+    norms = norm(evals_C)**2 \
+        + norm(evals_D)**2 \
+        + (sC**2 + sD**2) / n**2 \
+        + norm(VCone)**2 / n * 2 + norm(VDone)**2 / n * 2
+    fval = (norms - 2 * fval_qcal) / n**2
+
+    return fval
+
+
+def VXV(X):
+    """ Efficient implementation for computing `V^T @ X @ V`
+
+    Args:
+        X (np.ndarray): Input matrix with dim (n, n).
+
+    Returns:
+        np.ndarray: Projected matrix with dim (n-1, n-1).
+    """
+    n = X.shape[0]
+    x = -1 / (n + np.sqrt(n))
+    y = -1 / np.sqrt(n)
+    a = X[0, 0]
+    b = X[1:, 0]
+    B = X[1:, 1:]
+    c = y * b + x * np.sum(B, axis=1)
+    return a * y**2 + 2 * x * y * np.sum(b) + x**2 * np.sum(B) + B + c + c.reshape(n - 1, 1)
+
+
+def Vx(c):
+    """ Efficient implementation for computing `V^T @ x`
+
+    Args:
+        c (np.array): Array with dim (n, ).
+
+    Returns:
+        np.array: Projected array with dim (n-1, ).
+    """
+    n = len(c)
+    x = -1 / (n + np.sqrt(n))
+    y = -1 / np.sqrt(n)
+    return c[1:] + ((y - x) * c[0] + x * sum(c))
 
 
 def gwtil_lb(C, D, return_matrix=False, **kwargs):
@@ -303,8 +414,8 @@ def gwtil_lb(C, D, return_matrix=False, **kwargs):
     n = D.shape[0]
     mn = m * n
 
-    C_norm = np.linalg.norm(C)
-    D_norm = np.linalg.norm(D)
+    C_norm = norm(C)
+    D_norm = norm(D)
 
     qfunc_val, Q1, Q2 = Qcal_ub(C, D, return_matrix=True, **kwargs)
     gwtil_val = C_norm ** 2 / m**2 + D_norm**2 / n**2 - 2 / mn * qfunc_val
@@ -336,8 +447,8 @@ def gwtil_lb_lb(C, D, return_matrix=False, **kwargs):
     n = D.shape[0]
     mn = m * n
 
-    C_norm = np.linalg.norm(C)
-    D_norm = np.linalg.norm(D)
+    C_norm = norm(C)
+    D_norm = norm(D)
 
     qfunc_val, P = Qcal_ub_ub(C, D, return_matrix=True, **kwargs)
     gwtil_val = C_norm ** 2 / m**2 + D_norm**2 / n**2 - 2 / mn * qfunc_val
@@ -364,8 +475,8 @@ def eval_gwtil_ub(C, D, P):
     m = C.shape[0]
     n = D.shape[0]
     mn = m * n
-    C_norm = np.linalg.norm(C)
-    D_norm = np.linalg.norm(D)
+    C_norm = norm(C)
+    D_norm = norm(D)
     gwtil_fval = C_norm**2 / m**2 + D_norm**2 / n**2 - 2 / mn * np.trace(C @ P @ D @ P.T)
     return gwtil_fval
 
@@ -399,8 +510,8 @@ def eval_gwtil_lb(C, D, Q1, Q2):
 
     U = projection_matrix(m)
     V = projection_matrix(n)
-    C_norm = np.linalg.norm(C)
-    D_norm = np.linalg.norm(D)
+    C_norm = norm(C)
+    D_norm = norm(D)
 
     _const = 1 / mn * sC * sD
     _linear = np.trace(V.T @ D @ en @ em.T @ C @ U @ Q2)
