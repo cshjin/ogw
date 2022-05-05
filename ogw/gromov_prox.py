@@ -6,7 +6,7 @@ from scipy.optimize import linear_sum_assignment, quadratic_assignment
 from scipy.spatial.distance import cdist
 
 from ogw.spg import SPG, default_options
-from ogw.utils import padding, squarify_v2, squarify
+from ogw.utils import padding_v2, squarify_v2
 
 
 def projection_matrix(n, seed=0):
@@ -347,7 +347,7 @@ def fused_quad_solver_rec(C, D, M, alpha=1, maximize=True, domain="OE", return_m
         C_hat = U.T @ C @ U
         D_hat = V.T @ D @ V
 
-        _C_hat, _D_hat = padding(C_hat, D_hat)
+        _C_hat, _D_hat = padding_v2(C_hat, D_hat)
 
         # REVIEW: tr (C_hat Q D_hat Q.T)
 
@@ -767,12 +767,12 @@ def fused_gromov_upper_bound_rec(M, C1, C2, alpha=0.5, domain="O", return_matrix
     C_hat = U.T @ C1 @ U
     D_hat = V.T @ C2 @ V
 
-    _C_hat, _D_hat = padding(C_hat, D_hat)
+    _C_hat, _D_hat = padding_v2(C_hat, D_hat)
 
     F1 = C1 @ em @ en.T @ C2
     F2 = C2 @ en @ em.T @ C1
     F_hat = alpha * ((U.T @ F1 @ V) + (V.T @ F2 @ U).T) / np.sqrt(m * n) - (1 - alpha) / 2 * (V.T @ M.T @ U).T
-    _F_hat = squarify(F_hat)
+    _F_hat = squarify_v2(F_hat)
 
     def obj_func(Q):
         Q = Q.reshape([m - 1, m - 1])

@@ -1,15 +1,14 @@
-""" barycenter based gwtil """
+""" barycenter based ogw """
 import networkx as nx
 import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize
 from scipy.spatial.distance import cdist
 
-from ogw.cttil_bary import grad_C_T, grad_T_Z
-from ogw.dist import calc_T, cttil_Z
+# from ogw.cttil_bary import grad_C_T, grad_T_Z
+# from ogw.dist import calc_T, cttil_Z
 from ogw.gromov_prox import projection_matrix
-from ogw.gwtil import (eval_gwtil_lb, eval_gwtil_ub, gwtil_lb, gwtil_lb_lb,
-                       gwtil_ub)
+from ogw.ogw_dist import eval_ogw_lb, eval_ogw_ub, ogw_lb, ogw_lb_lb, ogw_ub
 from ogw.utils import padding_v2
 
 ################################################################################
@@ -17,46 +16,46 @@ from ogw.utils import padding_v2
 ################################################################################
 
 
-def eval_bary_gwtil_lb(C, Ds, lambdas, Q1s, Q2s):
-    """ Evaluate the barycenter with gwtil_lb
+def eval_bary_ogw_lb(C, Ds, lambdas, Q1s, Q2s):
+    """ Evaluate the barycenter with ogw_lb
 
     Args:
         C (np.ndarray): Distance matrix from barycenter.
         Ds (list): List of distance matrices from samples.
         lambdas (np.array): Weights of samples.
-        Q1s (list): List of optimal Q1 matrices from gwtil_lb.
-        Q2s (list): List of optimal Q2 matrices from gwtil_lb.
+        Q1s (list): List of optimal Q1 matrices from ogw_lb.
+        Q2s (list): List of optimal Q2 matrices from ogw_lb.
 
     Returns:
         float: Loss from barycenter problem.
 
     See Also:
-        `eval_gwtil_lb`
+        `eval_ogw_lb`
     """
     fval = 0
     for D, lamb, Q1, Q2 in zip(Ds, lambdas, Q1s, Q2s):
-        fval += lamb * eval_gwtil_lb(C, D, Q1, Q2)
+        fval += lamb * eval_ogw_lb(C, D, Q1, Q2)
     return fval
 
 
-def eval_bary_gwtil_ub(C, Ds, lambdas, Ps):
-    """ Evaluate the barycenter with gwtil_ub
+def eval_bary_ogw_ub(C, Ds, lambdas, Ps):
+    """ Evaluate the barycenter with ogw_ub
 
     Args:
         C (np.ndarray): Distance matrix from barycenter.
         Ds (list): List of distance matrices from samples.
         lambdas (np.array): Weights of samples.
-        Ps (list): List of optimal P matrices from gwtil_ub.
+        Ps (list): List of optimal P matrices from ogw_ub.
 
     Returns:
         float: Loss from barycenter problem.
 
     See Also:
-        `eval_gwtil_ub`
+        `eval_ogw_ub`
     """
     fval = 0
     for D, lamb, P in zip(Ds, lambdas, Ps):
-        fval += lamb * eval_gwtil_ub(C, D, P)
+        fval += lamb * eval_ogw_ub(C, D, P)
     return fval
 
 ################################################################################
@@ -64,8 +63,8 @@ def eval_bary_gwtil_ub(C, Ds, lambdas, Ps):
 ################################################################################
 
 
-def update_square_loss_gwtil_ub(p, lambdas, Ps, Ds):
-    """ Update barycenter C using the optimal Ps from gwtil_ub.
+def update_square_loss_ogw_ub(p, lambdas, Ps, Ds):
+    """ Update barycenter C using the optimal Ps from ogw_ub.
 
     .. math::
         C^* = \\sum_i lambdas_i P_i D_i P_i^\top / m / n_i
@@ -74,7 +73,7 @@ def update_square_loss_gwtil_ub(p, lambdas, Ps, Ds):
     Args:
         p (np.array): Distribution of the barycenter, with dim (m, ).
         lambdas (np.array): Weights of samples, with dim (S, ).
-        Ps (list): List of P in gwtil_ub, with length of S.
+        Ps (list): List of P in ogw_ub, with length of S.
         Ds (list): List of distance matrices from samples, with length of S.
 
     Returns:
@@ -95,8 +94,8 @@ def update_square_loss_gwtil_ub(p, lambdas, Ps, Ds):
     return np.divide(tmpsum, ppt)
 
 
-def update_square_loss_gwtil_lb(p, lambdas, Q1s, Q2s, Ds):
-    """ Update barycenter C using the optimal Q1s and Q2s from gwtil_lb.
+def update_square_loss_ogw_lb(p, lambdas, Q1s, Q2s, Ds):
+    """ Update barycenter C using the optimal Q1s and Q2s from ogw_lb.
 
     .. math::
         C^* = \\sum_i lambdas_i P_i D_i P_i^\top / m / n_i
@@ -105,8 +104,8 @@ def update_square_loss_gwtil_lb(p, lambdas, Q1s, Q2s, Ds):
     Args:
         p (np.array): Distribution of the barycenter, with dim (m, ).
         lambdas (np.array): Weights of samples, with dim (S, ).
-        Q1s (list): List of Q1 in gwtil_lb, with length of S.
-        Q2s (list): List of Q2 in gwtil_lb, with length of S.
+        Q1s (list): List of Q1 in ogw_lb, with length of S.
+        Q2s (list): List of Q2 in ogw_lb, with length of S.
         Ds (list): List of distance matrices from samples, with length of S.
 
     Returns:
@@ -135,8 +134,8 @@ def update_square_loss_gwtil_lb(p, lambdas, Q1s, Q2s, Ds):
     return np.divide(tmpsum, ppt)
 
 
-def update_square_loss_gwtil_lb_lb(p, lambdas, Ps, Cs):
-    """ Update barycenter C using the optimal Ps from gwtil_lb_lb.
+def update_square_loss_ogw_lb_lb(p, lambdas, Ps, Cs):
+    """ Update barycenter C using the optimal Ps from ogw_lb_lb.
 
     .. math::
         C^* = \\sum_i lambdas_i P_i D_i P_i^\top / m / n_i
@@ -145,7 +144,7 @@ def update_square_loss_gwtil_lb_lb(p, lambdas, Ps, Cs):
     Args:
         p (np.array): Distribution of the barycenter, with dim (m, ).
         lambdas (np.array): Weights of samples, with dim (S, ).
-        Ps (list): List of P in gwtil_lb_lb, with length of S.
+        Ps (list): List of P in ogw_lb_lb, with length of S.
         Ds (list): List of distance matrices from samples, with length of S.
 
     Returns:
@@ -154,7 +153,7 @@ def update_square_loss_gwtil_lb_lb(p, lambdas, Ps, Cs):
     See Also:
         `ot.gromov.update_square_loss`
     """
-    return update_square_loss_gwtil_ub(p, lambdas, Ps, Cs)
+    return update_square_loss_ogw_ub(p, lambdas, Ps, Cs)
 
 ################################################################################
 # Gradient w.r.t to barycenter C
@@ -206,11 +205,11 @@ def grad_Qcal_ub_C(D, Q1, Q2):
     return grad_
 
 
-def grad_gwtil_ub_C(C, D, P):
-    """ Grad of `gwtil_ub` w.r.t. C given C, D, P
+def grad_ogw_ub_C(C, D, P):
+    """ Grad of `ogw_ub` w.r.t. C given C, D, P
 
     .. math::
-        \\partial gwtil / \\partial C = 2 * C / m^2 - 2 / mn * (P D P^\top)
+        \\partial ogw / \\partial C = 2 * C / m^2 - 2 / mn * (P D P^\top)
 
     Args:
         C (np.ndarray): Geodesic distance in source domain with dim (m, m).
@@ -221,7 +220,7 @@ def grad_gwtil_ub_C(C, D, P):
         np.ndarray: grad w.r.t. C with dim (m, m)
 
     See Also:
-        `gwtil_ub`
+        `ogw_ub`
     """
     m = C.shape[0]
     n = D.shape[0]
@@ -232,11 +231,11 @@ def grad_gwtil_ub_C(C, D, P):
     return grad_
 
 
-def grad_gwtil_lb_C(C, D, Q1, Q2):
-    """ Grad of `gwtil_lb` w.r.t. C given C, D, Q1, Q2
+def grad_ogw_lb_C(C, D, Q1, Q2):
+    """ Grad of `ogw_lb` w.r.t. C given C, D, Q1, Q2
 
     .. math::
-        \\partial gwtil / \\partial C = 2 * C / m^2 - 2 / mn * (\\partial Qcal / \\parital C)
+        \\partial ogw / \\partial C = 2 * C / m^2 - 2 / mn * (\\partial Qcal / \\parital C)
         \\partial Qcal / \\partial C
                 = 11^\top sD
                 + 2 / \\sqrt{mn} 11^\top D V Q2^\top U^\top
@@ -252,7 +251,7 @@ def grad_gwtil_lb_C(C, D, Q1, Q2):
         np.ndarray: grad w.r.t. C with dim (m, m)
 
     See Also:
-        `gwtil_lb`
+        `ogw_lb`
     """
     m = C.shape[0]
     n = D.shape[0]
@@ -275,11 +274,11 @@ def grad_gwtil_lb_C(C, D, Q1, Q2):
     return grad_
 
 
-def grad_gwtil_lb_lb_C(C, D, P):
-    """ Grad of `gwtil_lb_lb` w.r.t. C given C, D, P
+def grad_ogw_lb_lb_C(C, D, P):
+    """ Grad of `ogw_lb_lb` w.r.t. C given C, D, P
 
     Note:
-        This is similar to `grad_gwtil_ub_C`.
+        This is similar to `grad_ogw_ub_C`.
 
     Args:
         C (np.ndarray): Geodesic distance in source domain with dim (m, m).
@@ -290,17 +289,17 @@ def grad_gwtil_lb_lb_C(C, D, P):
         np.ndarray: grad w.r.t. C with dim (m, m)
 
     See Also:
-        `gwtil_lb_lb`
+        `ogw_lb_lb`
     """
-    return grad_gwtil_ub_C(C, D, P)
+    return grad_ogw_ub_C(C, D, P)
 
 ################################################################################
 # Optimize over barycenter C
 ################################################################################
 
 
-def optim_C_gwtil_ub(N, Ds, ps, p, lambdas, log=False, **kwargs):
-    """ Optimize barycenter distance matrix using BFGS with the gwtil_ub
+def optim_C_ogw_ub(N, Ds, ps, p, lambdas, log=False, **kwargs):
+    """ Optimize barycenter distance matrix using BFGS with the ogw_ub
 
     Args:
         N (int): Size of the barycenter.
@@ -316,22 +315,22 @@ def optim_C_gwtil_ub(N, Ds, ps, p, lambdas, log=False, **kwargs):
     """
     S = len(Ds)
     Ps = [None] * S
-    gwtil_fval = [0] * S
+    ogw_fval = [0] * S
 
     def obj(C):
         C = C.reshape((N, N))
         for i in range(S):
             # NOTE: init P with previous step
-            val, P = gwtil_ub(C, Ds[i], return_matrix=True, P_init=Ps[i])
+            val, P = ogw_ub(C, Ds[i], return_matrix=True, P_init=Ps[i])
             # update P and loss
             Ps[i] = P
-            gwtil_fval[i] = val * lambdas[i]
-        fval = sum(gwtil_fval)
+            ogw_fval[i] = val * lambdas[i]
+        fval = sum(ogw_fval)
 
         # return fval
         grad = 0
         for i in range(S):
-            grad += lambdas[i] * grad_gwtil_ub_C(C, Ds[i], Ps[i])
+            grad += lambdas[i] * grad_ogw_ub_C(C, Ds[i], Ps[i])
         return fval, grad.flatten()
 
     def callback(C):
@@ -364,8 +363,8 @@ def optim_C_gwtil_ub(N, Ds, ps, p, lambdas, log=False, **kwargs):
         return C_opt
 
 
-def optim_C_gwtil_ub_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
-    """ Optimize barycenter distance matrix using closed-form solution with the gwtil_ub.
+def optim_C_ogw_ub_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
+    """ Optimize barycenter distance matrix using closed-form solution with the ogw_ub.
 
     Args:
         N (int): Size of the barycenter.
@@ -387,7 +386,7 @@ def optim_C_gwtil_ub_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
     prev_fval, cur_fval = 2**31, -2**31
     err = abs(prev_fval - cur_fval)
     Ps = [None] * S
-    gwtil_fvals = [0] * S
+    ogw_fvals = [0] * S
     fvals = []
 
     if "C_init" in kwargs:
@@ -405,15 +404,15 @@ def optim_C_gwtil_ub_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
     while err > tol and cpt < max_iter:
         cpt += 1
         for i in range(S):
-            val, P = gwtil_ub(C, Ds[i], return_matrix=True, P_init=Ps[i], **kwargs)
+            val, P = ogw_ub(C, Ds[i], return_matrix=True, P_init=Ps[i], **kwargs)
             Ps[i] = P
-            gwtil_fvals[i] = val * lambdas[i]
+            ogw_fvals[i] = val * lambdas[i]
 
-        cur_fval = sum(gwtil_fvals)
+        cur_fval = sum(ogw_fvals)
         err = abs(prev_fval - cur_fval)
         prev_fval = cur_fval
         fvals.append(cur_fval)
-        C = update_square_loss_gwtil_ub(p, lambdas, Ps, Ds)
+        C = update_square_loss_ogw_ub(p, lambdas, Ps, Ds)
         if kwargs.get("verbose"):
             print(f"fval {cur_fval:.4f}")
 
@@ -423,8 +422,8 @@ def optim_C_gwtil_ub_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
         return C
 
 
-def optim_C_gwtil_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
-    """ Optimize barycenter distance matrix using BFGS with the gwtil_lb
+def optim_C_ogw_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
+    """ Optimize barycenter distance matrix using BFGS with the ogw_lb
 
     Args:
         N (int): Size of the barycenter.
@@ -441,22 +440,22 @@ def optim_C_gwtil_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
     S = len(Ds)
     Q1s = [None] * S
     Q2s = [None] * S
-    gwtil_fval = [0] * S
+    ogw_fval = [0] * S
 
     def obj(C):
         C = C.reshape((N, -1))
         # np.fill_diagonal(C, 0)
         for i in range(S):
-            val, Q1, Q2 = gwtil_lb(C, Ds[i], return_matrix=True)
+            val, Q1, Q2 = ogw_lb(C, Ds[i], return_matrix=True)
             # update Q1, Q2 and loss
             Q1s[i] = Q1
             Q2s[i] = Q2
-            gwtil_fval[i] = val * lambdas[i]
-        fval = sum(gwtil_fval)
+            ogw_fval[i] = val * lambdas[i]
+        fval = sum(ogw_fval)
 
         grad = 0
         for i in range(S):
-            grad += lambdas[i] * grad_gwtil_lb_C(C, Ds[i], Q1s[i], Q2s[i])
+            grad += lambdas[i] * grad_ogw_lb_C(C, Ds[i], Q1s[i], Q2s[i])
         # np.fill_diagonal(grad, 0)
         return fval, grad.flatten()
 
@@ -486,15 +485,15 @@ def optim_C_gwtil_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
                    )
     C_opt = res['x'].reshape((N, N))
     # NOTE: with the optimal Q1s Q2s, the update C is same from BFGS.
-    # C_opt = update_square_loss_gwtil_lb(p, lambdas, Q1s, Q2s, Ds)
+    # C_opt = update_square_loss_ogw_lb(p, lambdas, Q1s, Q2s, Ds)
     if log:
         return C_opt, res
     else:
         return C_opt
 
 
-def optim_C_gwtil_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
-    """ Optimize barycenter distance matrix using closed-form solution with the gwtil_lb.
+def optim_C_ogw_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
+    """ Optimize barycenter distance matrix using closed-form solution with the ogw_lb.
 
     Args:
         N (int): Size of the barycenter.
@@ -517,7 +516,7 @@ def optim_C_gwtil_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
     err = abs(prev_fval - cur_fval)
     Q1s = [None] * S
     Q2s = [None] * S
-    gwtil_fvals = [0] * S
+    ogw_fvals = [0] * S
     fvals = []
 
     if "C_init" in kwargs:
@@ -535,16 +534,16 @@ def optim_C_gwtil_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
     while err > tol and cpt < max_iter:
         cpt += 1
         for i in range(S):
-            _fval, Q1, Q2 = gwtil_lb(C, Ds[i], return_matrix=True)
+            _fval, Q1, Q2 = ogw_lb(C, Ds[i], return_matrix=True)
             Q1s[i] = Q1
             Q2s[i] = Q2
-            gwtil_fvals[i] = _fval * lambdas[i]
+            ogw_fvals[i] = _fval * lambdas[i]
 
-        cur_fval = sum(gwtil_fvals)
+        cur_fval = sum(ogw_fvals)
         err = abs(prev_fval - cur_fval)
         prev_fval = cur_fval
         fvals.append(cur_fval)
-        C = update_square_loss_gwtil_lb(p, lambdas, Q1s, Q2s, Ds)
+        C = update_square_loss_ogw_lb(p, lambdas, Q1s, Q2s, Ds)
         if kwargs.get("verbose"):
             print(f"fval {cur_fval:.4f}")
 
@@ -554,8 +553,8 @@ def optim_C_gwtil_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
         return C
 
 
-def optim_C_gwtil_lb_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
-    """ Optimize barycenter distance matrix using BFGS with the gwtil_lb_lb
+def optim_C_ogw_lb_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
+    """ Optimize barycenter distance matrix using BFGS with the ogw_lb_lb
 
     Args:
         N (int): Size of the barycenter.
@@ -576,7 +575,7 @@ def optim_C_gwtil_lb_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
         C = C.reshape((N, N))
         losses = [0] * S
         for i in range(S):
-            val, P = gwtil_lb_lb(C, Ds[i], return_matrix=True)
+            val, P = ogw_lb_lb(C, Ds[i], return_matrix=True)
             # update P and loss
             Ps[i] = P
             losses[i] = val * lambdas[i]
@@ -585,7 +584,7 @@ def optim_C_gwtil_lb_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
         # return fval
         grad_ = 0
         for i in range(S):
-            grad_ += lambdas[i] * grad_gwtil_lb_lb_C(C, Ds[i], Ps[i])
+            grad_ += lambdas[i] * grad_ogw_lb_lb_C(C, Ds[i], Ps[i])
         return fval, grad_.flatten()
 
     def callback(C):
@@ -619,8 +618,8 @@ def optim_C_gwtil_lb_lb(N, Ds, ps, p, lambdas, log=False, **kwargs):
         return C_opt
 
 
-def optim_C_gwtil_lb_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
-    """ Optimize barycenter distance matrix using closed-form solution with the gwtil_lb_lb.
+def optim_C_ogw_lb_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
+    """ Optimize barycenter distance matrix using closed-form solution with the ogw_lb_lb.
 
     Args:
         N (int): Size of the barycenter.
@@ -642,7 +641,7 @@ def optim_C_gwtil_lb_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
     prev_fval, cur_fval = 2**31, -2**31
     err = abs(prev_fval - cur_fval)
     Ps = [None] * S
-    gwtil_fvals = [0] * S
+    ogw_fvals = [0] * S
     fvals = []
 
     if "C_init" in kwargs:
@@ -660,15 +659,15 @@ def optim_C_gwtil_lb_lb_v2(N, Ds, ps, p, lambdas, log=False, **kwargs):
     while err > tol and cpt < max_iter:
         cpt += 1
         for i in range(S):
-            _fval, P = gwtil_lb_lb(C, Ds[i], return_matrix=True)
+            _fval, P = ogw_lb_lb(C, Ds[i], return_matrix=True)
             Ps[i] = P
-            gwtil_fvals[i] = _fval * lambdas[i]
+            ogw_fvals[i] = _fval * lambdas[i]
 
-        cur_fval = sum(gwtil_fvals)
+        cur_fval = sum(ogw_fvals)
         err = abs(prev_fval - cur_fval)
         prev_fval = cur_fval
         fvals.append(cur_fval)
-        C = update_square_loss_gwtil_lb_lb(p, lambdas, Ps, Ds)
+        C = update_square_loss_ogw_lb_lb(p, lambdas, Ps, Ds)
         if kwargs.get("verbose"):
             print(f"fval {cur_fval:.4f}")
 
@@ -758,111 +757,111 @@ def eigen_projection(C, D):
     return C_star[:m, :m]
 
 
-################################################################################
-# DEPRECATED
-################################################################################
+# ################################################################################
+# # DEPRECATED
+# ################################################################################
 
-def _solve_d_cvx(C):
-    import cvxpy as cp
-    k = C.shape[0]
-    U = projection_matrix(k)
-    Y = cp.Variable((k, k), symmetric=True)
-    constraints = [cp.diag(C + Y) == 0, U.T @ Y @ U == 0]
-    obj = cp.Minimize(cp.norm(Y, p="fro"))
-    prob = cp.Problem(obj, constraints)
-    prob.solve()
-    print(Y.value)
-    return Y.value
-
-
-def optimize_Z_gwtil_lb(N, Ds, Zs, ps, p, lambdas, Z_init=None):
-
-    S = len(Ds)
-    debug = False
-
-    Q1s = [np.zeros(D.shape) for D in Ds]
-    Q2s = [np.zeros(D.shape) for D in Ds]
-
-    def obj(Z):
-        Z = Z.reshape((N, N))
-        # DEBUG: force-symmetry
-        Z = (Z + Z.T) / 2
-        C = cttil_Z(Z)
-        T_mat = calc_T(Z)
-        losses = []
-        for i in range(S):
-            # tr(CPDP.T)
-            val, Q1, Q2 = gwtil_lb(C, Ds[i], return_matrix=True)
-            Q1s[i] = Q1
-            Q2s[i] = Q2
-            losses.append(val * lambdas[i])
-        fval = sum(losses)
-
-        grad_ = 0
-        for i in range(S):
-            grad_ += lambdas[i] * np.einsum("ij,ijkl,klpq->pq",
-                                            # (2 * C / N**2 - 2 * Ps[i].T @ Ds[i] @ Ps[i]),
-                                            grad_gwtil_lb_C(C, Ds[i], Q1s[i], Q2s[i]),
-                                            grad_C_T(T_mat),
-                                            grad_T_Z(Z))
-        return fval, grad_.flatten()
-
-    def callback(Z):
-        fval, grad = obj(Z)
-        print(f"obj {fval:.4f}", f"||g|| {np.linalg.norm(grad):.4f}")
-
-    if Z_init is None:
-        Z_init = np.zeros(N**2)
-
-    res = minimize(obj, Z_init, method="BFGS", jac=True, callback=callback)
-
-    Z_opt = res['x'].reshape((N, N))
-    # DEBUG: how to update Z w.r.t Q1, Q2
-    # Z_opt = update_square_loss_v2(p, lambdas, Ps, Zs)
-    return Z_opt
+# def _solve_d_cvx(C):
+#     import cvxpy as cp
+#     k = C.shape[0]
+#     U = projection_matrix(k)
+#     Y = cp.Variable((k, k), symmetric=True)
+#     constraints = [cp.diag(C + Y) == 0, U.T @ Y @ U == 0]
+#     obj = cp.Minimize(cp.norm(Y, p="fro"))
+#     prob = cp.Problem(obj, constraints)
+#     prob.solve()
+#     print(Y.value)
+#     return Y.value
 
 
-def optimize_Z_gwtil_ub(N, Ds, Zs, ps, p, lambdas, Z_init=None):
-    S = len(Ds)
-    debug = False
+# def optimize_Z_ogw_lb(N, Ds, Zs, ps, p, lambdas, Z_init=None):
 
-    # Ps = [np.zeros(D.shape) for D in Ds]
-    Ps = [None] * S
+#     S = len(Ds)
+#     debug = False
 
-    def obj(Z):
-        Z = Z.reshape((N, N))
-        # DEBUG: force-symmetry
-        Z = (Z + Z.T) / 2
-        C = cttil_Z(Z)
-        T_mat = calc_T(Z)
-        losses = []
-        for i in range(S):
-            # tr(CPDP.T)
-            val, P = gwtil_ub(C, Ds[i], return_matrix=True, P_init=Ps[i])
-            Ps[i] = P
-            losses.append(val * lambdas[i])
-        fval = sum(losses)
+#     Q1s = [np.zeros(D.shape) for D in Ds]
+#     Q2s = [np.zeros(D.shape) for D in Ds]
 
-        grad_ = 0
-        for i in range(S):
-            grad_ += lambdas[i] * np.einsum("ij,ijkl,klpq->pq",
-                                            # (2 * C / N**2 - 2 * Ps[i].T @ Ds[i] @ Ps[i]),
-                                            grad_gwtil_ub_C(C, Ds[i], Ps[i]),
-                                            grad_C_T(T_mat),
-                                            grad_T_Z(Z))
-        return fval, grad_.flatten()
+#     def obj(Z):
+#         Z = Z.reshape((N, N))
+#         # DEBUG: force-symmetry
+#         Z = (Z + Z.T) / 2
+#         C = cttil_Z(Z)
+#         T_mat = calc_T(Z)
+#         losses = []
+#         for i in range(S):
+#             # tr(CPDP.T)
+#             val, Q1, Q2 = ogw_lb(C, Ds[i], return_matrix=True)
+#             Q1s[i] = Q1
+#             Q2s[i] = Q2
+#             losses.append(val * lambdas[i])
+#         fval = sum(losses)
 
-    def callback(Z):
-        fval, grad = obj(Z)
-        print(f"obj {fval:.4f}", f"||g|| {np.linalg.norm(grad):.4f}")
+#         grad_ = 0
+#         for i in range(S):
+#             grad_ += lambdas[i] * np.einsum("ij,ijkl,klpq->pq",
+#                                             # (2 * C / N**2 - 2 * Ps[i].T @ Ds[i] @ Ps[i]),
+#                                             grad_ogw_lb_C(C, Ds[i], Q1s[i], Q2s[i]),
+#                                             grad_C_T(T_mat),
+#                                             grad_T_Z(Z))
+#         return fval, grad_.flatten()
 
-    if Z_init is None:
-        # Z_init = np.zeros(N**2)
-        Z_init = np.random.rand(N**2)
+#     def callback(Z):
+#         fval, grad = obj(Z)
+#         print(f"obj {fval:.4f}", f"||g|| {np.linalg.norm(grad):.4f}")
 
-    res = minimize(obj, Z_init, method="BFGS", jac=True, callback=callback)
+#     if Z_init is None:
+#         Z_init = np.zeros(N**2)
 
-    Z_opt = res['x'].reshape((N, N))
-    # DEBUG: having the update or not
-    Z_opt = update_square_loss_gwtil_ub(p, lambdas, Ps, Zs)
-    return Z_opt
+#     res = minimize(obj, Z_init, method="BFGS", jac=True, callback=callback)
+
+#     Z_opt = res['x'].reshape((N, N))
+#     # DEBUG: how to update Z w.r.t Q1, Q2
+#     # Z_opt = update_square_loss_v2(p, lambdas, Ps, Zs)
+#     return Z_opt
+
+
+# def optimize_Z_ogw_ub(N, Ds, Zs, ps, p, lambdas, Z_init=None):
+#     S = len(Ds)
+#     debug = False
+
+#     # Ps = [np.zeros(D.shape) for D in Ds]
+#     Ps = [None] * S
+
+#     def obj(Z):
+#         Z = Z.reshape((N, N))
+#         # DEBUG: force-symmetry
+#         Z = (Z + Z.T) / 2
+#         C = cttil_Z(Z)
+#         T_mat = calc_T(Z)
+#         losses = []
+#         for i in range(S):
+#             # tr(CPDP.T)
+#             val, P = ogw_ub(C, Ds[i], return_matrix=True, P_init=Ps[i])
+#             Ps[i] = P
+#             losses.append(val * lambdas[i])
+#         fval = sum(losses)
+
+#         grad_ = 0
+#         for i in range(S):
+#             grad_ += lambdas[i] * np.einsum("ij,ijkl,klpq->pq",
+#                                             # (2 * C / N**2 - 2 * Ps[i].T @ Ds[i] @ Ps[i]),
+#                                             grad_ogw_ub_C(C, Ds[i], Ps[i]),
+#                                             grad_C_T(T_mat),
+#                                             grad_T_Z(Z))
+#         return fval, grad_.flatten()
+
+#     def callback(Z):
+#         fval, grad = obj(Z)
+#         print(f"obj {fval:.4f}", f"||g|| {np.linalg.norm(grad):.4f}")
+
+#     if Z_init is None:
+#         # Z_init = np.zeros(N**2)
+#         Z_init = np.random.rand(N**2)
+
+#     res = minimize(obj, Z_init, method="BFGS", jac=True, callback=callback)
+
+#     Z_opt = res['x'].reshape((N, N))
+#     # DEBUG: having the update or not
+#     Z_opt = update_square_loss_ogw_ub(p, lambdas, Ps, Zs)
+#     return Z_opt

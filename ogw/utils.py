@@ -8,6 +8,8 @@ import random
 import dateutil
 import numpy as np
 from scipy.spatial.distance import cdist
+import networkx as nx
+from ogw.data_loader import build_noisy_circular_graph
 
 
 def create_log_dir(FLAGS, name):
@@ -197,27 +199,27 @@ def pad_with(vector, pad_width, iaxis, kwargs):
     vector[-pad_width[1]:] = pad_value
 
 
-def padding(C1, C2, pad_value=0):
-    """ padding on the smaller matrix """
-    if C1.shape[0] > C2.shape[0]:
-        pad_width = C1.shape[0] - C2.shape[0]
-        return C1, np.pad(C2, ((0, pad_width)), pad_with)
-    elif C1.shape[0] < C2.shape[0]:
-        pad_width = C2.shape[0] - C1.shape[0]
-        return np.pad(C1, (0, pad_width), pad_with), C2
-    else:
-        return C1, C2
+# def padding(C1, C2, pad_value=0):
+#     """ padding on the smaller matrix """
+#     if C1.shape[0] > C2.shape[0]:
+#         pad_width = C1.shape[0] - C2.shape[0]
+#         return C1, np.pad(C2, ((0, pad_width)), pad_with)
+#     elif C1.shape[0] < C2.shape[0]:
+#         pad_width = C2.shape[0] - C1.shape[0]
+#         return np.pad(C1, (0, pad_width), pad_with), C2
+#     else:
+#         return C1, C2
 
 
-def squarify(M, pad_value=0):
-    if M.shape[0] > M.shape[1]:
-        pad_width = M.shape[0] - M.shape[1]
-        return np.pad(M, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
-    elif M.shape[0] < M.shape[1]:
-        pad_width = M.shape[1] - M.shape[0]
-        return np.pad(M, ((0, pad_width), (0, 0)), mode='constant', constant_values=0)
-    else:
-        return M
+# def squarify(M, pad_value=0):
+#     if M.shape[0] > M.shape[1]:
+#         pad_width = M.shape[0] - M.shape[1]
+#         return np.pad(M, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
+#     elif M.shape[0] < M.shape[1]:
+#         pad_width = M.shape[1] - M.shape[0]
+#         return np.pad(M, ((0, pad_width), (0, 0)), mode='constant', constant_values=0)
+#     else:
+#         return M
 
 
 def padding_v2(C1, C2, pad_value=0):

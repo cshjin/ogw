@@ -14,7 +14,7 @@ Run the automatic env setup file `source setup.sh` or
 
 * install supplimentary libraries
   `conda install matplotlib joblib networkx numba`
-  `pip install qpsolvers nsopy`
+  <!-- `pip install qpsolvers nsopy` -->
 
 * install the package as develop mode
   `python setup.py develop`

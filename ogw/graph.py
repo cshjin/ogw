@@ -10,7 +10,6 @@ import ot
 from matplotlib import cm
 from scipy import sparse
 from scipy.sparse.csgraph import shortest_path
-from ogw.dist import commute_time, cttil
 
 
 class NoAttrMatrix(Exception):
@@ -153,14 +152,6 @@ class Graph():
             if method == 'shortest_path':
                 C = shortest_path(A)
 
-            # REVIEW: commute distance
-            if method == "ct":
-                C = commute_time(A.toarray())
-
-                # C = all_pair_commute_time(A)
-            if method == "cttil":
-                C = cttil(A.toarray())
-
             if method == 'square_shortest_path':
                 C = shortest_path(A)
                 C = C**2
@@ -235,12 +226,6 @@ def find_thresh(C, inf=0.5, sup=3, step=10, metric="sp"):
         Cprime = sp_to_adjacency(C, 0, thresh)
         if metric == "sp":
             SC = shortest_path(Cprime, method='D')
-        elif metric == "ct":
-            SC = commute_time(Cprime)
-        elif metric == "cttil":
-            SC = cttil(Cprime)
-        # SC = commute_time(Cprime)
-        # SC = Cprime
         SC[SC == float('inf')] = 100
         dist.append(np.linalg.norm(SC - C))
     return search[np.argmin(dist)], dist

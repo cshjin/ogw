@@ -1,0 +1,4 @@
+**/results/
+**/*.pyc
+.vscode/
+**/ogw.egg-info
