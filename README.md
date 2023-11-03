@@ -1,4 +1,4 @@
-# Orthogonal Gromov-Wasserstein Distance
+# Orthogonal Gromov-Wasserstein Discrepancy
 
 ## Preparation
 
@@ -32,6 +32,16 @@ We provide a set of demonstrations of `OGW`:
 * `tightness_mutag.ipynb`: A demo of tightness on MUTAG dataset.
 * `barycenter_syn.ipynb`: A demo of barycenter on synthetic data.
 * `barycenter_mnist_2d.ipynb`: A demo of barycenter on point cloud MNIST-2D data.
+
+## Citation
+```
+@inproceedings{jin2022orthogonal,
+  title={Orthogonal Gromov-Wasserstein Discrepancy with Efficient Lower Bound},
+  author={Jin, Hongwei and Yu, Zishun and Zhang, Xinhua},
+  booktitle={The 38th Conference on Uncertainty in Artificial Intelligence},
+  year={2022}
+}
+```
 
 ## License
 
